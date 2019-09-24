@@ -3,13 +3,13 @@
 ModuleToProcess = 'PMPro.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.0000'
+ModuleVersion = '2.0000'
 
 # ID used to uniquely identify this module
 GUID = 'b888e75a-2284-474b-9b34-3ecaed5d9821'
 
 # Author of this module
-Author = 'Matt Egan'
+Author = 'Matt Egan, Armand Hatting'
 
 HelpInfoUri  = 'https://github.com/mbegan/PMPro-PSModule'
 
@@ -17,7 +17,7 @@ HelpInfoUri  = 'https://github.com/mbegan/PMPro-PSModule'
 CompanyName = ''
 
 # Copyright statement for this module
-Copyright = 'Use as you see fit, credit is always nice'
+Copyright = '(c) 2019 Armand Hatting. All rights reserved.'
 
 # Description of the functionality provided by this module
 Description = 'This module contains powershell wrappers to leverage the Okta API functions described here https://www.manageengine.com/products/passwordmanagerpro/help/restapi.html'
