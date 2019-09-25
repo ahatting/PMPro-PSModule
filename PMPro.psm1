@@ -1,8 +1,11 @@
-﻿#using the httputility from system.web
+﻿#using the httputility from system.web to do the API calls
 [System.Reflection.Assembly]::LoadWithPartialName("System.Web") | out-null
 
+#Remove old module from current session
 $ExecutionContext.SessionState.Module.OnRemove = { Remove-Module myPMPro }
 
+
+#Generates a random password from the characters in the variable $charactersets
 function pmproNewPassword
 {
     param
@@ -37,12 +40,13 @@ function pmproNewPassword
     }
     return $Password
 }
-
+#Decrypts the authorization token from PMP API user account (if you use an encrypted hash of the authorization token in myPMPro.ps1)
 function pmpproEncAuthToken()
 {
     return (ConvertFrom-SecureString -SecureString (Read-Host -AsSecureString -Prompt "PlainText AUTH Token"))
 }
 
+#Function for generating friendly error messages ()
 function _restThrowError()
 {
     param
@@ -70,6 +74,24 @@ function _restThrowError()
     throw $text
 }
 
+<#
+.SYNOPSIS
+Short description
+
+.DESCRIPTION
+Long description
+
+.PARAMETER inst
+Parameter description
+
+.EXAMPLE
+An example
+
+.NOTES
+General notes
+#>
+
+#Function to check if instance exists in myPMPro.ps1 settings file
 function _testInstance()
 {
     param
@@ -85,6 +107,7 @@ function _testInstance()
     }
 }
 
+#Function to call the PMP RESTAPI
 function _pmproRestCall()
 {
     param
@@ -123,7 +146,7 @@ function _pmproRestCall()
     {
         $request.Headers.Add($key, $headers[$key])
     }
- 
+
     if ( ($method -eq "POST") -or ($method -eq "PUT") )
     {
         $postData = ConvertTo-Json $body
@@ -138,7 +161,7 @@ function _pmproRestCall()
         $outputStream.Write($bytes,0,$bytes.Length)
         $outputStream.Close()
     }
- 
+
     try
     {
         [System.Net.HttpWebResponse]$response = $request.GetResponse()
@@ -191,6 +214,7 @@ function _pmproRestCall()
     }    
 }
 
+#Function to build the body text for adding or updating resources in PMP
 function _pmproBuildResourceBody()
 {
     param
@@ -221,7 +245,7 @@ function pmproGetResources()
 {
     <# 
      .Synopsis
-      Used to Retrieve ALL resources assigned to a user in Credential Manager
+      Used to Retrieve ALL resources assigned to a user in PMP
 
      .Description
       Returns an Object representing the collection of Resources
@@ -229,7 +253,7 @@ function pmproGetResources()
      .Parameter inst
       the identifier of the Instance defined in your myPMPro.ps1 file
 
-     .Example
+    .Example
       # Get all the resources that are available to the user defined by the token in the prod instance
       pmproGetResources -inst prod
     #>
@@ -255,8 +279,10 @@ function pmproGetResources()
     }
 
     $reshash = New-Object System.Collections.Hashtable
+    
     foreach ($res in $request.operation.Details)
     {
+    
         $_c = $reshash.Add($res.'RESOURCE NAME',$res)
     }
     return $reshash
@@ -266,7 +292,7 @@ function pmproGetAccountsbyResource()
 {
     <# 
          .Synopsis
-          Used to Retrieve ALL Accounts availble to the requestor for a given resource in Credential Manager
+          Used to Retrieve ALL Accounts availble to the requestor for a given resource in PMP
 
          .Description
           Returns an Object representing the collection of Accounts
@@ -303,19 +329,21 @@ function pmproGetAccountsbyResource()
         throw $_
     }
     $acthash = New-Object System.Collections.Hashtable
+    
     foreach ($act in $request.operation.Details.'ACCOUNT LIST')
     {
+        
         $_c = $acthash.Add($act.'ACCOUNT NAME',$act)
     }
-    #return $acthash
-    return $request
+    return $acthash
+    
 }
 
 function pmproGetPasswordforResouceAccount()
 {
     <# 
          .Synopsis
-          Used to Retrieve A credential availble to the requestor for a given resource in Credential Manager
+          Used to retrieve a credential available to the requestor for a given resource in PMP
 
          .Description
           Returns an Object representing the collection of Accounts
@@ -352,6 +380,80 @@ function pmproGetPasswordforResouceAccount()
         throw $_
     }
     return $request.operation.Details.PASSWORD
+}
+
+function pmproGetResourcesPasswordOnName(){
+    <# 
+     .Synopsis
+      Combines the functions to retrieve the password for a resource account 
+
+     .Description
+      Returns a plain text string with the password
+
+     .Parameter inst
+      the identifier of the Instance defined in your myPMPro.ps1 file
+
+     .Parameter resName
+      the name of the resource in PMP, for instance SERVER01
+
+     .Parameter accName
+      the name of the account in PMP, for instance DOMAINNAME\svc-account
+
+    .Example
+      # Retrieves the (plain text) password for Resource SERVER01 and accountname DOMAINNAME\svc-account
+      pmproGetResourcesPasswordOnName -inst prod -resName "SERVER01" -accName "DOMAINNAME\svc-account"
+    #>
+
+    param
+    (
+        [parameter(Mandatory=$true)][alias("instance")][String]$inst,
+        [parameter(Mandatory=$true)][alias("resourceName")][String]$resName,
+		[parameter(Mandatory=$true)][alias("AccountName")][String]$accName
+    )
+    
+    try
+    {
+        $resourceID = (pmproGetResources -inst $inst) | ForEach-Object{ $_[$resName] } | Select-Object "RESOURCE ID"
+        
+    }
+    catch
+    {
+        if ($PMProVerbose -eq $true)
+        {
+            Write-Host -ForegroundColor red -BackgroundColor white $_.TargetObject
+        }
+        throw $_
+    }
+    try
+    {
+        
+		$AccountID = (pmproGetAccountsbyResource -inst $inst -rid $resourceID."RESOURCE ID") | ForEach-Object{ $_[$accName] } | Select-Object "ACCOUNT ID"
+        
+    }
+    catch
+    {
+        if ($PMProVerbose -eq $true)
+        {
+            Write-Host -ForegroundColor red -BackgroundColor white $_.TargetObject
+        }
+        throw $_
+    }
+    try
+    {
+     	
+		$accountPWD = (pmproGetPasswordforResouceAccount -inst $inst -rid $resourceID."RESOURCE ID" -aid $AccountID."ACCOUNT ID")
+        
+    }
+    catch
+    {
+        if ($PMProVerbose -eq $true)
+        {
+            Write-Host -ForegroundColor red -BackgroundColor white $_.TargetObject
+        }
+        throw $_
+    }
+
+	return $AccountPWD
 }
 
 Export-ModuleMember -Function pmpro*
