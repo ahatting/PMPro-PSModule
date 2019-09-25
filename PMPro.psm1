@@ -41,9 +41,9 @@ function pmproNewPassword
     return $Password
 }
 #Decrypts the authorization token from PMP API user account (if you use an encrypted hash of the authorization token in myPMPro.ps1)
-function pmpproEncAuthToken()
+function pmproEncAuthToken()
 {
-    return (ConvertFrom-SecureString -SecureString (Read-Host -AsSecureString -Prompt "PlainText AUTH Token"))
+    return ((Read-Host -Prompt "PlainText AUTH Token")  | ConvertTo-SecureString -AsPlainText -Force | ConvertFrom-SecureString)
 }
 
 #Function for generating friendly error messages ()
