@@ -11,7 +11,7 @@ GUID = 'b888e75a-2284-474b-9b34-3ecaed5d9821'
 # Author of this module
 Author = 'Matt Egan (Version 1), Armand Hatting (Current version)'
 
-HelpInfoUri  = 'https://github.com/mbegan/PMPro-PSModule'
+HelpInfoUri  = 'https://github.com/ahatting/PMPro-PSModule'
 
 # Company or vendor of this module
 CompanyName = ''
